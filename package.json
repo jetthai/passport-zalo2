@@ -1,5 +1,5 @@
 {
-  "name": "@jetthai/passport-zalo",
+  "name": "@jetthaisoft/passport-zalo",
   "version": "1.0.4",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
