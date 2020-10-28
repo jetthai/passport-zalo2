@@ -1,5 +1,5 @@
 {
-  "name": "@jetthaisoft/passport-zalo",
+  "name": "@jetthai/passport-zalo",
   "version": "1.0.4",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
@@ -21,14 +21,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nguyenthanhxuan/passport-zalo.git"
+    "url": "git+https://github.com/jetthai/passport-zalo.git"
   },
   "author": "Xuan Nguyen",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nguyenthanhxuan/passport-zalo/issues"
+    "url": "https://github.com/jetthai/passport-zalo/issues"
   },
-  "homepage": "https://github.com/nguyenthanhxuan/passport-zalo#readme",
+  "homepage": "https://github.com/jetthai/passport-zalo#readme",
   "dependencies": {
     "passport-strategy": "^1.0.0"
   },
