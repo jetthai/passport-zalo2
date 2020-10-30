@@ -10,7 +10,7 @@ OAuth2 using: `clientID`, `clientSecret` but Zalo using `app_id`, `app_secret`
 
 ## Install
 
-    $ npm i @xvn/passport-zalo
+    $ npm i @jetthai/passport-zalo
 
 ## Usage
 
