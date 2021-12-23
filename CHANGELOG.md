@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.8](https://github.com/jetthai/passport-zalo/compare/v1.0.7...v1.0.8) (2021-12-23)
+
+
+### Bug Fixes
+
+* solve the problem that when success wont redirect correctly ([29a77d3](https://github.com/jetthai/passport-zalo/commit/29a77d34ed72db891f703afb9d674e746157b290))
+
 ### [1.0.7](https://github.com/jetthai/passport-zalo/compare/v1.0.6...v1.0.7) (2021-12-23)
 
 
