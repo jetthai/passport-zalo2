@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.0.9](https://github.com/jetthai/passport-zalo/compare/v1.0.8...v1.0.9) (2022-02-12)
+
+
+### Bug Fixes
+
+* update url ([7bd2abf](https://github.com/jetthai/passport-zalo/commit/7bd2abf77a2ed6408e40e513c46236e52ae3ffaf))
+
 ### [1.0.8](https://github.com/jetthai/passport-zalo/compare/v1.0.7...v1.0.8) (2021-12-23)
 
 
