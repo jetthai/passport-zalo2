@@ -1,6 +1,6 @@
 {
   "name": "@jetthai/passport-zalo2",
-  "version": "2.0.10",
+  "version": "2.0.11",
   "description": "Passport strategy for authenticating with Zalo. An application popular in Viet Nam",
   "keywords": [
     "passport",
@@ -24,7 +24,9 @@
     "type": "git",
     "url": "git+https://github.com/jetthai/passport-zalo2.git"
   },
-  "files": ["dist/**/*"],
+  "files": [
+    "dist/**/*"
+  ],
   "author": "Xuan Nguyen",
   "license": "MIT",
   "bugs": {
