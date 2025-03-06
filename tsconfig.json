@@ -9,7 +9,7 @@
     "experimentalDecorators": true,
     "target": "ESNext",
     "sourceMap": true,
-    "outDir": "./dist",
+    "outDir": "./lib",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
@@ -19,5 +19,6 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true
-  }
+  },
+  "include": ["lib/**/*"]
 }
