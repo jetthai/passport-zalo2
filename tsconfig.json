@@ -9,7 +9,7 @@
     "experimentalDecorators": true,
     "target": "ESNext",
     "sourceMap": true,
-    "outDir": "./lib",
+    "outDir": "./dist",
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,

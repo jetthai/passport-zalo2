@@ -12,10 +12,11 @@
     "oauth2",
     "zalo"
   ],
-  "main": "./lib",
   "scripts": {
     "release": "standard-version && git push --follow-tags origin master && npm publish",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -29,9 +30,6 @@
   "homepage": "https://github.com/jetthai/passport-zalo2#readme",
   "dependencies": {
     "passport": "^0.7.0"
-  },
-  "directories": {
-    "lib": "lib"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.0",
