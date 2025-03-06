@@ -20,5 +20,4 @@
     "noFallthroughCasesInSwitch": false,
     "resolveJsonModule": true
   },
-  "include": ["lib/**/*"]
 }
