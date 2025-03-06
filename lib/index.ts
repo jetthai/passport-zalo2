@@ -1,6 +1,6 @@
 import * as https from 'https';
 import { Request } from 'express';
-import { Strategy } from 'passport';
+import passport from 'passport';
 
 /**
  * Strategy options interface
@@ -27,7 +27,7 @@ export type VerifyFunction = (
 /**
  * Zalo Strategy
  */
-export class ZaloSrategy extends Strategy {
+export class Strategy extends passport.Strategy {
 	public readonly name: string;
 	private readonly _verify: VerifyFunction;
 	private readonly _options: StrategyOptions;
