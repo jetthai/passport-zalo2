@@ -24,6 +24,7 @@
     "type": "git",
     "url": "git+https://github.com/jetthai/passport-zalo2.git"
   },
+  "files": ["dist/**/*"],
   "author": "Xuan Nguyen",
   "license": "MIT",
   "bugs": {
