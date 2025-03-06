@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### 2.0.2 (2025-03-06)
+
+
+### Bug Fixes
+
+* solve the problem that when success wont redirect correctly ([29a77d3](https://github.com/jetthai/passport-zalo/commit/29a77d34ed72db891f703afb9d674e746157b290))
+* support Zalo V4 API ([17b64eb](https://github.com/jetthai/passport-zalo/commit/17b64eb1d83f5fa4193a1da7bc4d3b95f2baef21))
+* update url ([7bd2abf](https://github.com/jetthai/passport-zalo/commit/7bd2abf77a2ed6408e40e513c46236e52ae3ffaf))
+* zalo will support error handling ([d03ee45](https://github.com/jetthai/passport-zalo/commit/d03ee45eb71c9f882c068341ce9298787b31dac1))
+
 ### [2.0.1](https://github.com/jetthai/passport-zalo/compare/v1.0.12...v2.0.1) (2025-03-06)
 
 ### [1.0.12](https://github.com/jetthai/passport-zalo/compare/v1.0.11...v1.0.12) (2025-03-06)

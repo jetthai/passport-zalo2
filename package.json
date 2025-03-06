@@ -1,6 +1,6 @@
 {
   "name": "@jetthai/passport-zalo",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "Passport strategy for authenticating with Zalo. An application popular in Viet Nam",
   "keywords": [
     "passport",
