@@ -34,7 +34,7 @@
   },
   "homepage": "https://github.com/jetthai/passport-zalo2#readme",
   "dependencies": {
-    "passport": "^0.7.0",
+    "passport-oauth2": "^1.8.0",
     "rimraf": "^6.0.1"
   },
   "devDependencies": {
@@ -43,6 +43,7 @@
     "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
     "@types/passport": "^1.0.17",
+    "@types/passport-oauth2": "^1.4.17",
     "@typescript-eslint/eslint-plugin": "^8.26.0",
     "@typescript-eslint/parser": "^8.26.0",
     "eslint": "^9.21.0",
