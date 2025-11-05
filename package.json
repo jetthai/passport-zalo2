@@ -1,6 +1,6 @@
 {
   "name": "@jetthai/passport-zalo2",
-  "version": "2.0.13",
+  "version": "2.0.14",
   "description": "Passport strategy for authenticating with Zalo. An application popular in Viet Nam",
   "keywords": [
     "passport",
@@ -35,30 +35,30 @@
   "homepage": "https://github.com/jetthai/passport-zalo2#readme",
   "dependencies": {
     "passport-oauth2": "^1.8.0",
-    "rimraf": "^6.0.1"
+    "rimraf": "^6.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
-    "@eslint/js": "^9.29.0",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.0.3",
+    "@eslint/js": "^9.39.1",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.0",
     "@types/passport": "^1.0.17",
-    "@types/passport-oauth2": "^1.4.17",
-    "@typescript-eslint/eslint-plugin": "^8.34.1",
-    "@typescript-eslint/parser": "^8.34.1",
-    "eslint": "^9.29.0",
-    "eslint-config-prettier": "^10.1.5",
+    "@types/passport-oauth2": "^1.8.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-eslint-comments": "^3.2.0",
-    "eslint-plugin-prettier": "^5.4.1",
+    "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-promise": "^7.2.1",
-    "eslint-plugin-unicorn": "^59.0.1",
-    "globals": "^16.2.0",
-    "prettier": "^3.5.3",
+    "eslint-plugin-unicorn": "^62.0.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
     "standard-version": "^9.5.0",
-    "ts-loader": "^9.5.2",
+    "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "^8.34.1"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3"
   }
 }
