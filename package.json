@@ -15,10 +15,13 @@
   "main": "./dist",
   "scripts": {
     "prebuild": "rimraf dist",
-    "release": "npm run prebuild && npm run build && standard-version && git push --follow-tags origin master && npm publish",
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc -p tsconfig.build.json",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "npm run prebuild && npm run build && bumpp && git push --follow-tags origin master && npm publish",
+    "release:patch": "npm run prebuild && npm run build && bumpp patch && git push --follow-tags origin master && npm publish",
+    "release:minor": "npm run prebuild && npm run build && bumpp minor && git push --follow-tags origin master && npm publish",
+    "release:major": "npm run prebuild && npm run build && bumpp major && git push --follow-tags origin master && npm publish"
   },
   "repository": {
     "type": "git",
@@ -34,18 +37,20 @@
   },
   "homepage": "https://github.com/jetthai/passport-zalo2#readme",
   "dependencies": {
+    "base64url": "^3.0.1",
     "passport-oauth2": "^1.8.0",
-    "rimraf": "^6.1.0"
+    "rimraf": "^6.1.2"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^9.39.1",
-    "@types/express": "^5.0.5",
-    "@types/node": "^24.10.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.2",
     "@types/passport": "^1.0.17",
     "@types/passport-oauth2": "^1.8.0",
-    "@typescript-eslint/eslint-plugin": "^8.46.3",
-    "@typescript-eslint/parser": "^8.46.3",
+    "@typescript-eslint/eslint-plugin": "^8.49.0",
+    "@typescript-eslint/parser": "^8.49.0",
+    "bumpp": "^10.3.2",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-eslint-comments": "^3.2.0",
@@ -53,12 +58,11 @@
     "eslint-plugin-promise": "^7.2.1",
     "eslint-plugin-unicorn": "^62.0.0",
     "globals": "^16.5.0",
-    "prettier": "^3.6.2",
-    "standard-version": "^9.5.0",
+    "prettier": "^3.7.4",
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.46.3"
+    "typescript-eslint": "^8.49.0"
   }
 }

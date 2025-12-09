@@ -1,113 +1,200 @@
-import OAuth2Strategy, { VerifyFunction, VerifyFunctionWithRequest } from 'passport-oauth2';
-import { ZaloStrategyOptions, ZaloStrategyOptionsWithRequest } from './options';
+import base64url from 'base64url';
+import crypto from 'crypto';
 import { Request } from 'express';
 import https from 'https';
+import {
+	Strategy as OAuth2Strategy,
+	StrategyOptions as PassportOAuth2StrategyOptions,
+	StrategyOptionsWithRequest as PassportOAuth2StrategyOptionsWithRequest,
+} from 'passport-oauth2';
+import url from 'url';
 
+import { mapUserProfile } from './mapUserProfile';
+import { ProfileWithMetaData, ZaloTokenError } from './models';
+import {
+	AuthenticateOptions,
+	isStrategyOptions,
+	isStrategyOptionsWithRequest,
+	PKCEStore,
+	StrategyOptions,
+	StrategyOptionsWithRequest,
+} from './models';
+import { ZaloUserInfoResponse } from './models';
+
+/**
+ * Verify callback for Zalo strategy
+ */
+export type ZaloVerifyCallback = (err?: Error | null, user?: Express.User | false, info?: object) => void;
+
+/**
+ * Verify function without request
+ */
+export type ZaloVerifyFunction = (
+	accessToken: string,
+	refreshToken: string,
+	profile: ProfileWithMetaData,
+	done: ZaloVerifyCallback,
+) => void;
+
+/**
+ * Verify function with request
+ */
+export type ZaloVerifyFunctionWithRequest = (
+	req: Request,
+	accessToken: string,
+	refreshToken: string,
+	profile: ProfileWithMetaData,
+	done: ZaloVerifyCallback,
+) => void;
+
+/**
+ * @public
+ */
 export class Strategy extends OAuth2Strategy {
-	private readonly _authURL: string = 'https://oauth.zaloapp.com/v4/permission';
-	private readonly _accessTokenURL: string = 'https://oauth.zaloapp.com/v4/access_token';
-	private readonly _profileURL: string = 'https://graph.zalo.me/v2.0/me';
+	_userProfileURL: string;
+	_useRealPKCE: boolean;
+	_appId: string;
+	_appSecret: string;
+	_zaloCallbackURL: string;
+	_zaloVerify: ZaloVerifyFunction | ZaloVerifyFunctionWithRequest;
+	_passReqToCallback: boolean;
+	// These properties exist on passport-oauth2 Strategy but are not typed
+	declare _stateStore: PKCEStore;
+	declare _callbackURL: string;
+	declare _scope: string | string[];
 
-	constructor(_options: ZaloStrategyOptions, _verify: VerifyFunction);
-	constructor(_options: ZaloStrategyOptionsWithRequest, _verify: VerifyFunctionWithRequest);
-
+	/**
+	 * Zalo strategy constructor
+	 *
+	 * Required options:
+	 *
+	 *   - `appId` - your Zalo application's App ID
+	 *   - `appSecret` - your Zalo application's App Secret
+	 *   - `callbackURL` - URL to which Zalo will redirect the user after granting authorization
+	 *
+	 * @remarks
+	 * The Zalo authentication strategy authenticates requests by delegating to
+	 * Zalo using the OAuth 2.0 protocol with PKCE.
+	 *
+	 * Applications must supply a `verify` callback which accepts an `accessToken`,
+	 * `refreshToken` and service-specific `profile`, and then calls the `cb`
+	 * callback supplying a `user`, which should be set to `false` if the
+	 * credentials are not valid. If an exception occurred, `err` should be set.
+	 *
+	 * @example
+	 * ```
+	 * passport.use(new ZaloStrategy({
+	 *     appId: 'your-app-id',
+	 *     appSecret: 'your-app-secret',
+	 *     callbackURL: 'https://www.example.net/auth/zalo/callback'
+	 *   },
+	 *   function(accessToken, refreshToken, profile, cb) {
+	 *     User.findOrCreate(..., function (err, user) {
+	 *       cb(err, user);
+	 *     });
+	 *   }
+	 * ));
+	 * ```
+	 */
+	constructor(userOptions: StrategyOptions, verify: ZaloVerifyFunction);
+	constructor(userOptions: StrategyOptionsWithRequest, verify: ZaloVerifyFunctionWithRequest);
 	constructor(
-		private readonly _options: ZaloStrategyOptions | ZaloStrategyOptionsWithRequest,
-		private readonly _verify: VerifyFunction | VerifyFunctionWithRequest,
+		userOptions: StrategyOptions | StrategyOptionsWithRequest,
+		verify: ZaloVerifyFunction | ZaloVerifyFunctionWithRequest,
 	) {
-		if (!_verify) throw new TypeError('ZaloStrategy requires a verify callback');
-		if (!_options.appId) throw new TypeError('ZaloStrategy requires an appId option');
-		if (!_options.appSecret) throw new TypeError('ZaloStrategy requires an appSecret option');
-		if (!_options.callbackURL) throw new TypeError('ZaloStrategy require an Callback URL option');
-		if (_options.passReqToCallback) {
-			super(_options, _verify as VerifyFunctionWithRequest);
+		const options = Strategy.buildStrategyOptions(userOptions);
+
+		// Create a dummy verify function for passport-oauth2
+		// We handle the actual verification ourselves
+		const dummyVerify = (
+			accessToken: string,
+			refreshToken: string,
+			profile: ProfileWithMetaData,
+			done: ZaloVerifyCallback,
+		) => {
+			done(null, profile);
+		};
+
+		// Cast to passport-oauth2 types to allow custom PKCEStore
+		if (isStrategyOptions(options)) {
+			super(options as unknown as PassportOAuth2StrategyOptions, dummyVerify as never);
+		} else if (isStrategyOptionsWithRequest(options)) {
+			super(options as unknown as PassportOAuth2StrategyOptionsWithRequest, dummyVerify as never);
 		} else {
-			super(_options as ZaloStrategyOptions, _verify as VerifyFunction);
+			throw Error('Strategy options not supported.');
 		}
+
 		this.name = 'zalo';
+		this._appId = userOptions.appId;
+		this._appSecret = userOptions.appSecret;
+		this._zaloCallbackURL = userOptions.callbackURL;
+		this._zaloVerify = verify;
+		this._passReqToCallback = !!userOptions.passReqToCallback;
+		this._userProfileURL =
+			options.userProfileURL || 'https://graph.zalo.me/v2.0/me?fields=id,birthday,name,gender,picture';
+
+		// Track if real PKCE is being used (custom store provided)
+		this._useRealPKCE = !!userOptions.store;
 	}
 
-	/**
-	 * Authenticate request.
-	 *
-	 * This function must be overridden by subclasses.  In abstract form, it always
-	 * throws an exception.
-	 *
-	 * @param {Object} req The request to authenticate.
-	 * @param {Object} [options] Strategy-specific options.
-	 * @api public
-	 */
-	public authenticate(req: Request, options?: any): void {
-		options = options || {};
-		if (req.query && req.query.code) {
-			// 如果有授權碼，獲取訪問令牌
-			this.getOAuthAccessToken(req.query.code as string, (status, oauthData) => {
-				if (status === 'error') {
-					return this.error(oauthData);
-				}
-				// 獲取用戶資料
-				this.getUserProfile(oauthData, (profileStatus, profileData) => {
-					if (profileStatus === 'error') {
-						return this.error(profileData);
-					}
-					if (this._options.passReqToCallback) {
-						(this._verify as VerifyFunctionWithRequest)(
-							req,
-							oauthData.access_token,
-							null,
-							null,
-							profileData,
-							(err, user, info) => {
-								if (err) return this.error(err);
-								if (!user) return this.fail(info);
-								this.success(user, info || {});
-							},
-						);
-					} else {
-						(this._verify as VerifyFunction)(oauthData.access_token, null, null, profileData, (err, user, info) => {
-							if (err) return this.error(err);
-							if (!user) return this.fail(info);
-							this.success(user, info || {});
-						});
-					}
-				});
-			});
-		} else {
-			const authUrl = new URL(this._authURL);
-			authUrl.searchParams.set('app_id', this._options.appId);
-			authUrl.searchParams.set('redirect_uri', this._options.callbackURL);
-			if (options.state) {
-				authUrl.searchParams.set('state', options.state);
-			}
-			this.redirect(authUrl.toString());
+	static buildStrategyOptions(userOptions: StrategyOptions | StrategyOptionsWithRequest) {
+		const options = (userOptions || {}) as StrategyOptions | StrategyOptionsWithRequest;
+		options.sessionKey = options.sessionKey || 'oauth:zalo';
+		const authorizationURL = options.authorizationURL || 'https://oauth.zaloapp.com/v4/permission';
+		const tokenURL = options.tokenURL || 'https://oauth.zaloapp.com/v4/access_token';
+
+		// Zalo requires clients to use PKCE (RFC 7636)
+		// If a custom store is provided, use real PKCE
+		// Otherwise, we'll handle PKCE manually in authenticate()
+		if (!options.store) {
+			type StoreCb = (err: Error | null, state?: string) => void;
+			type VerifyCb = (err: Error | null, ok?: string | false, state?: string) => void;
+
+			options.store = {
+				store: (_req: unknown, _verifier: string, _state: unknown, _meta: unknown, cb: StoreCb) => {
+					cb(null, 'state');
+				},
+				verify: (_req: unknown, _state: string, cb: VerifyCb) => {
+					cb(null, 'challenge', 'state');
+				},
+			};
 		}
+
+		options.pkce = true;
+		options.state = true;
+
+		// Map appId/appSecret to clientID/clientSecret for passport-oauth2
+		return {
+			...options,
+			clientID: userOptions.appId,
+			clientSecret: userOptions.appSecret,
+			authorizationURL,
+			tokenURL,
+		};
 	}
 
 	/**
-	 * Get access token when have code return from request permission
-	 * URL to load is: https://oauth.zaloapp.com/v3/access_token?app_id={1}&app_secret={2}&code={3}
+	 * Retrieve user profile from Zalo.
 	 *
-	 * @param {String} code
-	 * @param {Function} done
-	 * @api private
+	 * @remarks
+	 * This function fetches Zalo user info and maps it to normalized profile,
+	 * with the following properties parsed from Zalo user info response:
+	 *
+	 *   - `id`
+	 *   - `name`
+	 *   - `birthday`
+	 *   - `gender`
+	 *   - `picture`
 	 */
-	private getOAuthAccessToken(code: string, done: (status: string, oauthData: any) => void): void {
-		const tokenUrl = new URL(this._accessTokenURL);
-		const params = new URLSearchParams({
-			app_id: this._options.appId,
-			code: code,
-			grant_type: 'authorization_code',
-		});
+	userProfile(accessToken: string, done: (error: Error | null, user?: ProfileWithMetaData) => void) {
+		const profileUrl = new URL(this._userProfileURL);
 
 		const requestOptions = {
-			port: 443,
-			hostname: tokenUrl.hostname,
-			path: tokenUrl.pathname,
-			method: 'POST',
+			hostname: profileUrl.hostname,
+			path: profileUrl.pathname + profileUrl.search,
+			method: 'GET',
 			headers: {
-				'Content-Type': 'application/x-www-form-urlencoded',
-				'Content-Length': Buffer.byteLength(params.toString()),
-				secret_key: this._options.appSecret,
+				access_token: accessToken,
 			},
 		};
 
@@ -116,36 +203,229 @@ export class Strategy extends OAuth2Strategy {
 			res.on('data', (chunk) => (data += chunk.toString()));
 			res.on('end', () => {
 				try {
-					const result = JSON.parse(data);
-					done('success', result);
-				} catch (error) {
-					done('error', error);
+					const zaloUserInfoResponse = JSON.parse(data) as unknown as ZaloUserInfoResponse;
+
+					if (zaloUserInfoResponse.error) {
+						return done(new Error(zaloUserInfoResponse.message || 'Failed to fetch user profile'));
+					}
+
+					const userProfile = mapUserProfile(zaloUserInfoResponse);
+
+					const userProfileWithMetadata: ProfileWithMetaData = {
+						...userProfile,
+						_raw: data,
+						_json: zaloUserInfoResponse,
+					};
+
+					done(null, userProfileWithMetadata);
+				} catch {
+					done(new Error('Failed to parse user profile'));
 				}
 			});
 		});
 
-		req.on('error', (error) => done('error', error));
-		req.write(params.toString());
+		req.on('error', (error) => done(new OAuth2Strategy.InternalOAuthError('Failed to fetch user profile', error)));
 		req.end();
 	}
 
 	/**
-	 * Load basic user profile when we have access token
-	 * URL to load is: https://graph.zalo.me/v2.0/me?access_token=<User_Access_Token>&fields=id,birthday,name,gender,picture
-	 *
-	 * @param {Object} oauthData
-	 * @param {Function} done
-	 * @api private
+	 * Return extra parameters to be included in the authorization request.
+	 * When using real PKCE (custom store), we return empty and let authenticate() handle it.
+	 * When using fake PKCE (no custom store), returns a fixed code_challenge.
 	 */
-	private getUserProfile(oauthData: { access_token: string }, done: (status: string, profile: any) => void): void {
-		const profileUrl = new URL(this._profileURL);
-		profileUrl.searchParams.set('access_token', oauthData.access_token);
-		profileUrl.searchParams.set('fields', 'id,birthday,name,gender,picture'); // 根據實際 API 調整
+	authorizationParams(): object {
+		if (this._useRealPKCE) {
+			return {};
+		}
+		// Fake PKCE bypass with fixed challenge (S256)
+		const verifier = 'challenge';
+		const challenge = base64url(crypto.createHash('sha256').update(verifier).digest());
+		return {
+			app_id: this._appId,
+			code_challenge: challenge,
+			code_challenge_method: 'S256',
+		};
+	}
+
+	/**
+	 * Return extra parameters to be included in the token request.
+	 * Note: Zalo uses custom token endpoint handling, so this may not be used directly.
+	 */
+	tokenParams(): object {
+		if (this._useRealPKCE) {
+			return {};
+		}
+		return {
+			code_verifier: 'challenge',
+		};
+	}
+
+	/**
+	 * Authenticate request with custom PKCE handling for Zalo.
+	 *
+	 * Zalo's OAuth flow requires:
+	 * 1. app_id instead of client_id in authorization URL
+	 * 2. secret_key header instead of client_secret in token request
+	 * 3. PKCE with S256 method
+	 */
+	authenticate(req: Request, options?: AuthenticateOptions): void {
+		options = options || {};
+
+		const query = req.query as Record<string, unknown>;
+		const body = req.body as Record<string, unknown>;
+		const hasCode = query?.code || body?.code;
+
+		if (hasCode) {
+			// Callback phase - exchange code for token
+			this.handleCallback(req, options);
+		} else {
+			// Authorization phase - redirect to Zalo
+			this.handleAuthorization(req, options);
+		}
+	}
+
+	/**
+	 * Handle authorization redirect to Zalo
+	 */
+	private handleAuthorization(req: Request, options: AuthenticateOptions): void {
+		const stateStore = this._stateStore;
+		const customState = options.state as string | undefined;
+
+		const oauth2 = this._oauth2 as unknown as {
+			_authorizeUrl: string;
+			_accessTokenUrl: string;
+			_clientId: string;
+		};
+
+		// Generate PKCE verifier and challenge (S256 method)
+		const verifier = base64url(crypto.randomBytes(32));
+		const challenge = base64url(crypto.createHash('sha256').update(verifier).digest());
+
+		const meta = {
+			authorizationURL: oauth2._authorizeUrl,
+			tokenURL: oauth2._accessTokenUrl,
+			clientID: this._appId,
+		};
+
+		const storeState = customState || crypto.randomBytes(16).toString('hex');
+
+		stateStore.store(req, verifier, storeState, meta, (err, handle) => {
+			if (err) {
+				return this.error(err);
+			}
+
+			// Build Zalo authorization URL with PKCE parameters
+			const parsed = url.parse(oauth2._authorizeUrl, true);
+			parsed.query = {
+				app_id: this._appId,
+				redirect_uri: options.callbackURL || this._zaloCallbackURL,
+				code_challenge: challenge,
+				code_challenge_method: 'S256',
+				state: handle || storeState,
+			};
+			delete parsed.search;
+			const location = url.format(parsed);
+
+			this.redirect(location);
+		});
+	}
+
+	/**
+	 * Handle callback from Zalo - exchange code for token
+	 */
+	private handleCallback(req: Request, options: AuthenticateOptions): void {
+		const query = req.query as Record<string, string>;
+		const code = query.code;
+		const state = query.state;
+
+		if (query.error) {
+			return this.fail({ message: query.error_description || query.error });
+		}
+
+		if (!code) {
+			return this.fail({ message: 'Missing authorization code' });
+		}
+
+		const stateStore = this._stateStore;
+
+		// Verify state and get code_verifier
+		stateStore.verify(req, state, (err, verifier) => {
+			if (err) {
+				return this.error(err);
+			}
+
+			if (!verifier) {
+				return this.fail({ message: 'Invalid state parameter' });
+			}
+
+			// Exchange code for token using Zalo's custom endpoint
+			this.getOAuthAccessToken(
+				code,
+				verifier,
+				options.callbackURL || this._zaloCallbackURL,
+				(tokenErr, accessToken, refreshToken) => {
+					if (tokenErr) {
+						return this.error(tokenErr);
+					}
+
+					// Get user profile
+					this.userProfile(accessToken, (profileErr, profile) => {
+						if (profileErr) {
+							return this.error(profileErr);
+						}
+
+						const verified: ZaloVerifyCallback = (verifyErr, user, info) => {
+							if (verifyErr) {
+								return this.error(verifyErr);
+							}
+							if (!user) {
+								return this.fail(info);
+							}
+							this.success(user, info || {});
+						};
+
+						try {
+							if (this._passReqToCallback) {
+								(this._zaloVerify as ZaloVerifyFunctionWithRequest)(req, accessToken, refreshToken, profile, verified);
+							} else {
+								(this._zaloVerify as ZaloVerifyFunction)(accessToken, refreshToken, profile, verified);
+							}
+						} catch (ex) {
+							return this.error(ex as Error);
+						}
+					});
+				},
+			);
+		});
+	}
+
+	/**
+	 * Get OAuth access token from Zalo using custom endpoint
+	 * Zalo requires: POST with secret_key header and code_verifier in body
+	 */
+	private getOAuthAccessToken(
+		code: string,
+		codeVerifier: string,
+		_redirectUri: string,
+		done: (err: Error | null, accessToken?: string, refreshToken?: string) => void,
+	): void {
+		const tokenUrl = new URL('https://oauth.zaloapp.com/v4/access_token');
+		const params = new URLSearchParams({
+			app_id: this._appId,
+			code: code,
+			grant_type: 'authorization_code',
+			code_verifier: codeVerifier,
+		});
 
 		const requestOptions = {
-			hostname: profileUrl.hostname,
-			path: profileUrl.pathname + profileUrl.search,
-			method: 'GET',
+			hostname: tokenUrl.hostname,
+			path: tokenUrl.pathname,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/x-www-form-urlencoded',
+				'Content-Length': Buffer.byteLength(params.toString()),
+				secret_key: this._appSecret,
+			},
 		};
 
 		const req = https.request(requestOptions, (res) => {
@@ -153,15 +433,29 @@ export class Strategy extends OAuth2Strategy {
 			res.on('data', (chunk) => (data += chunk.toString()));
 			res.on('end', () => {
 				try {
-					const profile = JSON.parse(data);
-					done('success', profile);
-				} catch (error) {
-					done('error', error);
+					const result = JSON.parse(data) as {
+						access_token?: string;
+						refresh_token?: string;
+						expires_in?: number;
+					} & ZaloTokenError;
+
+					if (result.error) {
+						return done(
+							new Error(
+								result.error_description || result.error_reason || result.error_name || 'Failed to obtain access token',
+							),
+						);
+					}
+
+					done(null, result.access_token, result.refresh_token);
+				} catch {
+					done(new Error('Failed to parse token response'));
 				}
 			});
 		});
 
-		req.on('error', (error) => done('error', error));
+		req.on('error', (error) => done(error));
+		req.write(params.toString());
 		req.end();
 	}
 }
