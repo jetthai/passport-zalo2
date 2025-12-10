@@ -9,6 +9,11 @@ export type {
 	PKCEStore,
 	StoreCallback,
 	VerifyCallback,
+	isStrategyOptions,
+	isStrategyOptionsWithRequest,
+	ZaloUserInfoResponse,
+	ZaloError,
+	ZaloTokenError,
 } from './models';
 export type { ZaloVerifyCallback, ZaloVerifyFunction, ZaloVerifyFunctionWithRequest } from './strategy';
 export { Strategy };

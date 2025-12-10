@@ -6,8 +6,6 @@ import OAuth2Strategy, {
 	StrategyOptions as PassportOAuth2StrategyOptions,
 	StrategyOptionsWithRequest as PassportOAuth2StrategyOptionsWithRequest,
 	VerifyCallback,
-	VerifyFunction,
-	VerifyFunctionWithRequest,
 } from 'passport-oauth2';
 import url from 'url';
 
@@ -29,26 +27,25 @@ import { ZaloUserInfoResponse } from './models';
 export type ZaloVerifyCallback = VerifyCallback;
 
 /**
- * Verify function without request (standard 4-parameter signature from passport-oauth2)
+ * Verify function without request
  */
-export type ZaloVerifyFunction = Extract<
-	VerifyFunction<ProfileWithMetaData>,
-	(accessToken: string, refreshToken: string, profile: ProfileWithMetaData, verified: VerifyCallback) => void
->;
+export type ZaloVerifyFunction = (
+	accessToken: string,
+	refreshToken: string,
+	profile: ProfileWithMetaData,
+	verified: VerifyCallback,
+) => void;
 
 /**
- * Verify function with request (standard 5-parameter signature from passport-oauth2)
+ * Verify function with request
  */
-export type ZaloVerifyFunctionWithRequest = Extract<
-	VerifyFunctionWithRequest<ProfileWithMetaData>,
-	(
-		req: Request,
-		accessToken: string,
-		refreshToken: string,
-		profile: ProfileWithMetaData,
-		verified: VerifyCallback,
-	) => void
->;
+export type ZaloVerifyFunctionWithRequest = (
+	req: Request,
+	accessToken: string,
+	refreshToken: string,
+	profile: ProfileWithMetaData,
+	verified: VerifyCallback,
+) => void;
 
 /**
  * @public
