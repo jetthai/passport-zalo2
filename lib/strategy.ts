@@ -2,10 +2,12 @@ import base64url from 'base64url';
 import crypto from 'crypto';
 import { Request } from 'express';
 import https from 'https';
-import {
-	Strategy as OAuth2Strategy,
+import OAuth2Strategy, {
 	StrategyOptions as PassportOAuth2StrategyOptions,
 	StrategyOptionsWithRequest as PassportOAuth2StrategyOptionsWithRequest,
+	VerifyCallback,
+	VerifyFunction,
+	VerifyFunctionWithRequest,
 } from 'passport-oauth2';
 import url from 'url';
 
@@ -22,30 +24,31 @@ import {
 import { ZaloUserInfoResponse } from './models';
 
 /**
- * Verify callback for Zalo strategy
+ * Verify callback for Zalo strategy (alias for passport-oauth2 VerifyCallback)
  */
-export type ZaloVerifyCallback = (err?: Error | null, user?: Express.User | false, info?: object) => void;
+export type ZaloVerifyCallback = VerifyCallback;
 
 /**
- * Verify function without request
+ * Verify function without request (standard 4-parameter signature from passport-oauth2)
  */
-export type ZaloVerifyFunction = (
-	accessToken: string,
-	refreshToken: string,
-	profile: ProfileWithMetaData,
-	done: ZaloVerifyCallback,
-) => void;
+export type ZaloVerifyFunction = Extract<
+	VerifyFunction<ProfileWithMetaData>,
+	(accessToken: string, refreshToken: string, profile: ProfileWithMetaData, verified: VerifyCallback) => void
+>;
 
 /**
- * Verify function with request
+ * Verify function with request (standard 5-parameter signature from passport-oauth2)
  */
-export type ZaloVerifyFunctionWithRequest = (
-	req: Request,
-	accessToken: string,
-	refreshToken: string,
-	profile: ProfileWithMetaData,
-	done: ZaloVerifyCallback,
-) => void;
+export type ZaloVerifyFunctionWithRequest = Extract<
+	VerifyFunctionWithRequest<ProfileWithMetaData>,
+	(
+		req: Request,
+		accessToken: string,
+		refreshToken: string,
+		profile: ProfileWithMetaData,
+		verified: VerifyCallback,
+	) => void
+>;
 
 /**
  * @public
